@@ -1,0 +1,926 @@
+<div class="slides">
+    <section>
+        <h1>
+            <br>
+        </h1>
+<h1>Django Model</h1>
+<h1>Behaviors</h1>
+<h3>
+        <br>
+    </h3>
+<h3>
+    <span style="font-weight: normal; ">Advanced Patterns to Manage Model Complexity</span>
+</h3>
+<div>
+<span style="font-weight: normal; ">
+    <br>
+</span>
+</div>
+<div>
+<span style="font-weight: normal; ">
+    <br>
+</span>
+</div>
+<div>
+<span style="font-weight: normal; ">by Kevin Stone</span>
+</div>
+<div>
+<span style="font-weight: normal; ">CTO/Founder <a href="http://subblime.com">Subblime</a>
+</span>
+</div>
+<div>
+<br>
+</div>
+<p>GH:&nbsp;<a href="http://github.com/kevinastone">kevinastone</a>&nbsp;| TW: <a href="http://twitter.com/kevinastone">@kevinastone</a>&nbsp;| LI: <a href="http://www.linkedin.com/in/kevinastone">kevinastone</a>
+</p>
+</section>
+<section>
+    <h2>
+    <br>
+</h2>
+<h2>
+    <br>
+</h2>
+<h2>How do we maintain our Django&nbsp;</h2>
+<h2>Models as our application grows in&nbsp;</h2>
+<h2>complexity?</h2>
+<div>
+<br>
+</div>
+<h3>
+<br>
+</h3>
+<h3>10s-100s of Models</h3>
+<div>+ Views, Templates, Tests...</div>
+<div>
+<br>
+</div>
+
+</section>
+<section>
+    <h2>Compositional Model Behaviors</h2>
+<p>
+</p>
+<p>The Compositional Model pattern allows you to manage the complexity of your models through compartmentalization of functionality into manageable components.</p>
+<p>
+<br>
+</p>
+<div style="text-align: left; ">
+<h3>The Benefits of Fat Models</h3>
+<div>
+<ul>
+<li>Encapsulation</li>
+<li>Single Path</li>
+<li>Separation of Concerns (MVC)</li>
+</ul>
+<br>
+</div>
+<div>
+    <br>
+</div>
+<h3>Without the Maintenance Cost</h3>
+<ul>
+<li>DRY</li>
+    <li>Readability</li>
+<li>Reusability</li>
+<li>Single Responsibility</li>
+<li>Testability</li>
+</ul>
+<br>
+</div>
+</section>
+<section>
+    <section>
+        <h2>Compositional Model Behaviors</h2>
+<p>
+<br>
+    </p>
+<p>Decompose models into core reusable mixins</p>
+<p>
+<br>
+</p>
+<h3>Traditional</h3>
+<div>
+<pre><code>
+from django.db import models
+from django.contrib.auth.models import User
+
+
+class BlogPost(models.Model):
+    title = models.CharField(max_length=255)
+    body = models.TextField()
+    slug = models.SlugField()
+    author = models.ForeignKey(User, related_name='posts')
+    create_date = models.DateTimeField(auto_now_add=True)
+    modified_date = models.DateTimeField(auto_now=True)
+    publish_date = models.DateTimeField(null=True)
+
+</code></pre>
+</div>
+
+
+
+
+
+</section>
+<section>
+<h2>Decomposed into Behaviors</h2>
+<div>
+    <br>
+</div>
+<div>
+<pre><code>
+from django.db import models
+from django.contrib.auth.models import User
+
+
+class BlogPost(models.Model):
+    title = models.CharField(max_length=255)
+    body = models.TextField()
+    slug = models.SlugField()
+    author = models.ForeignKey(User, related_name='posts')
+    create_date = models.DateTimeField(auto_now_add=True)
+    modified_date = models.DateTimeField(auto_now=True)
+    publish_date = models.DateTimeField(null=True)
+
+</code></pre>
+</div>
+<pre class="fragment" data-fragment-index="0">
+<code>
+from django.db import models
+from .behaviors import Authorable, Permalinkable, Timestampable, Publishable
+
+
+class BlogPost(Authorable, Permalinkable, Timestampable, Publishable, models.Model):
+    title = models.CharField(max_length=255)
+    body = models.TextField()
+
+</code>
+</pre>
+
+
+</section>
+<section>
+<h2>Reusable Behaviors</h2>
+<div>
+    <br>
+</div>
+<pre><code>
+from django.contrib.auth.models import User
+
+
+class Authorable(models.Model):
+    author = models.ForeignKey(User)
+    
+    class Meta:
+        abstract = True
+
+
+class Permalinkable(models.Model):
+    slug = models.SlugField()    
+    
+    class Meta:
+        abstract = True
+
+...
+
+</code></pre>
+
+
+
+
+</section>
+<section>
+<h2>Reusable Behaviors (continued)</h2>
+<div>
+    <br>
+</div>
+<pre><code>
+...
+
+class Publishable(models.Model):
+    publish_date = models.DateTimeField(null=True)
+    
+    class Meta:
+        abstract = True
+
+
+class Timestampable(models.Model):
+    create_date = models.DateTimeField(auto_now_add=True)
+    modified_date = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        abstract = True
+
+</code></pre>
+</section>
+</section>
+<section>
+    <h2>Models are more than just Fields</h2>
+<div>
+    <br>
+</div>
+<div>That was just common fields, but what about everything else models encapsulate?</div>
+<div style="text-align: left; ">
+    <br>
+</div>
+<div style="text-align: left; ">
+    <ul>
+<li>Properties</li>
+        <li>Custom Methods</li>
+        <li>Method Overloads (save(), etc...)<br>
+</li>
+<li>Validation</li>
+        <li>Querysets</li>
+    </ul>
+</div>
+</section>
+    <section>
+        <section>
+<h2>Traditional Fat Model</h2>
+<div>
+    <br>
+</div>
+<pre><code>
+class BlogPost(models.Model):
+    ...
+
+    @property
+    def is_published(self):
+        from django.utils import timezone
+        return self.publish_date &lt; timezone.now()
+
+    @models.permalink
+    def get_absolute_url(self):
+        return ('blog-post', (), {
+            "slug": self.slug,
+        })
+
+    def pre_save(self, instance, add):
+        from django.utils.text import slugify
+        if not instance.slug:
+            instance.slug = slugify(self.title)
+
+</code>        </pre>
+
+
+
+
+</section>
+        <section>
+<h2>Behaviors with Methods</h2>
+<div>
+    <br>
+</div>
+<div>Maintains separation of concerns</div>
+<div>
+    <br>
+</div>
+<pre><code>class Permalinkable(models.Model):
+    slug = models.SlugField()
+    
+    class Meta:
+        abstract = True
+    
+    def get_url_kwargs(self, **kwargs):
+        kwargs.update(getattr(self, 'url_kwargs', {}))
+        return kwargs
+    
+    @models.permalink
+    def get_absolute_url(self):
+        url_kwargs = self.get_url_kwargs(slug=self.slug)        
+        return (self.url_name, (), url_kwargs)
+    
+    def pre_save(self, instance, add):
+        from django.utils.text import slugify
+        if not instance.slug:
+            instance.slug = slugify(self.slug_source)
+</code>        </pre>
+
+
+
+
+
+
+
+</section>
+        <section>
+<h2>Behaviors with Methods (continued)</h2>
+<div>
+    <br>
+</div>
+<div>Maintains separation of concerns</div>
+<div>
+    <br>
+</div>
+<pre><code>
+class Publishable(models.Model):
+    publish_date = models.DateTimeField(null=True)
+    
+    class Meta:
+        abstract = True
+    
+    objects = PassThroughManager.for_queryset_class(PublishableQuerySet)()
+
+    def publish_on(self, date=None):
+        from django.utils import timezone
+        if not date:
+            date = timezone.now()
+        self.publish_date = date
+        self.save()
+
+    @property
+    def is_published(self):
+        from django.utils import timezone
+        return self.publish_date &lt; timezone.now()
+</code>        </pre>
+
+
+
+
+
+</section>
+        <section>
+<h2>Behavior Based Model</h2>
+<div>
+    <br>
+</div>
+<pre><code>
+from django.db import models
+from .behaviors import Authorable, Permalinkable, Timestampable, Publishable
+
+
+class BlogPost(Authorable, Permalinkable, Timestampable, Publishable, models.Model):
+    title = models.CharField(max_length=255)
+    body = models.TextField()
+    
+    url_name = "blog-post"
+
+    @property
+    def slug_source(self):
+        return self.title
+
+</code>        </pre>
+
+
+</section>
+    </section>
+    <section>
+        <h2>Naming Tips</h2>
+<div>
+    <span style="text-align: left; ">
+        <br>
+    </span>
+</div>
+<h3 style="text-align: left; ">
+<span>Use "&lt;verb&gt;-able" naming pattern for behaviors</span>
+</h3>
+<p style="text-align: left; ">
+</p>
+<ul>
+<li>Readily identifiable as a&nbsp;compositional Mixin and not a standalone Model.</li>
+<li>The word Mixin is already overly-generic...</li>
+<li>(even though the naming gets weird quickly e.g.&nbsp;
+    <i>OptionallyGenericRelateable</i>)<br>
+</li>
+</ul>
+<div style="text-align: left; ">
+</div>
+
+
+</section>
+<section>
+    <h2>Custom Queryset Chaining</h2>
+<div>
+    <br>
+</div>
+<div>We all know to chain queryset methods, but what about adding custom manager methods?</div>
+<div>
+    <br>
+</div>
+<div>Let's Find Posts from a <u>Given Author</u> (username1) that are <u>Published</u> (publish_date in the past)</div>
+</section>
+    <section>
+        <section>
+<h2>Typical Tutorial Queries</h2>
+<div>
+    <br>
+</div>
+<div>No Encapsulation</div>
+<div>
+<br>
+</div>
+<pre><code>from django.utils import timezone
+from .models import BlogPost
+
+&gt;&gt;&gt; BlogPost.objects.filter(author__username='username1') \
+.filter(publish_date__lte=timezone.now())
+
+</code>        </pre>
+
+
+</section>
+        <section>
+<h2>Custom Managers</h2>
+<div>
+    <br>
+</div>
+<div>Let's create methods on a custom Manager to handle the past-publication date and author filters</div>
+<div>
+    <br>
+</div>
+<pre><code>
+class BlogPostManager(models.Manager):
+    
+    def published(self):
+        from django.utils import timezone
+        return self.filter(publish_date__lte=timezone.now())
+    
+    def authored_by(self, author):
+        return self.filter(author__username=author)
+
+
+class BlogPost(models.Model):
+    ...
+    
+    objects = BlogPostManager()</code></pre>
+<pre><code><br></code><code>&gt;&gt;&gt; published_posts = BlogPost.objects.published()
+&gt;&gt;&gt; posts_by_author = BlockPost.objects.authored_by('username1')
+</code><code><br></code>        </pre>
+
+
+
+
+
+</section>
+        <section>
+<h2>Custom Manager</h2>
+<div>
+    <br>
+</div>
+<div>But what about chaining our filters?</div>
+<div>
+    <br>
+</div>
+<pre><code>
+&gt;&gt;&gt; BlogPost.objects.authored_by('username1').published()
+AttributeError: 'QuerySet' object has no attribute 'published'
+<br></code><code>&gt;&gt;&gt; type(Blogpost.objects.authored_by('username1'))
+&lt;class 'django.db.models.query.QuerySet'&gt;
+
+</code>        </pre>
+</section>
+        <section>
+<h2>
+    <u>Solution</u>: Custom Querysets</h2>
+    <div>
+        <br>
+</div>
+    <div>Combined with PassthroughManager from <a href="https://github.com/carljm/django-model-utils">django-model-utils</a>
+</div>
+<div>
+    <br>
+</div>
+<pre><code><br></code><code>from model_utils.managers import PassThroughManager
+
+class PublishableQuerySet(models.query.QuerySet):
+    def published(self):
+        from django.utils import timezone
+        return self.filter(publish_date__lte=timezone.now())
+
+
+class AuthorableQuerySet(models.query.QuerySet):
+    def authored_by(self, author):
+        return self.filter(author__username=author)
+</code></pre>
+<pre><code>
+class BlogPostQuerySet(AuthorableQuerySet, PublishableQuerySet):
+    pass
+
+
+class BlogPost(Authorable, Permalinkable, Timestampable, Publishable, models.Model):
+    ...
+    
+    objects = PassThroughManager.for_queryset_class(BlogPostQuerySet)()</code>        </pre>
+</section>
+        <section>
+<h2>Chainable Custom Querysets</h2>
+<div>
+    <br>
+</div>
+<div>Now you can chain custom methods inherited from multiple behaviors</div>
+<div>
+    <br>
+</div>
+<pre><code>
+&gt;&gt;&gt; author_public_posts = BlogPost.objects.authored_by('username1').published()
+
+&gt;&gt;&gt; type(Blogpost.objects.authored_by('username1'))
+&lt;class 'example.queryset.BlogPostQuerySet'&gt;
+
+</code>        </pre>
+
+
+
+</section>
+        <section>
+<h2>Encapsulate the Business Logic</h2>
+<div>
+    <br>
+</div>
+<h3>What's more legible and maintainable?</h3>
+<div>
+    <br>
+</div>
+<pre><code>   BlogPost.objects.filter(author__username='username1').filter(publish_date__lte=timezone.now())
+</code></pre>
+<div>
+    -or-
+</div>
+<pre><code>
+    BlogPost.objects.authored_by('username1').published()
+
+</code>        </pre>
+
+</section>
+    </section>
+    <section>
+        <h2>Testing Behaviors</h2>
+<div>
+    <br>
+</div>
+<h3>Create matching Behavior tests to validate our models</h3>
+<div>
+        <br>
+    </div>
+<div style="text-align: left; ">Same Benefits as for Models</div>
+<div style="text-align: left; ">
+    <ul>
+<li>DRY</li>
+<li>Readability</li>
+<li>Reusability</li>
+<li>Single Responsibility</li>
+</ul>
+</div>
+</section>
+<section>
+    <section>
+<h2>Existing Unit Test Example</h2>
+<div>
+<br>
+</div>
+<pre><code>
+from django.test import TestCase
+
+from .models import BlogPost
+
+
+class BlogPostTestCase(TestCase):
+    def test_published_blogpost(self):
+        from django.utils import timezone
+        blogpost = BlogPost.objects.create(publish_date=timezone.now())
+        self.assertTrue(blogpost.is_published)
+        self.assertIn(blogpost, BlogPost.objects.published())
+
+</code>    </pre>
+</section>
+<section>
+<h2>Behavior Test Mixin</h2>
+<div>
+    <br>
+</div>
+<pre><code>
+class BehaviorTestCaseMixin(object):
+    def get_model(self):
+            return getattr(self, 'model')
+    
+    def create_instance(self, **kwargs):
+        raise NotImplementedError("Implement me")
+
+
+class PublishableTests(BehaviorTestCaseMixin):
+    def test_published_blogpost(self):
+        from django.utils import timezone
+        obj = self.create_instance(publish_date=timezone.now())
+        self.assertTrue(obj.is_published)
+        self.assertIn(obj, self.model.objects.published())
+
+</code></pre>
+</section>
+<section>
+<h2>Behavior Based Unit Tests</h2>
+<div>
+    <br>
+</div>
+<pre><code>
+from django.test import TestCase
+
+from .models import BlogPost</code><code>from .behaviors.tests import PublishableTests
+
+
+class BlogPostTestCase(PublishableTests, TestCase):
+    model = BlogPost
+    
+    def create_instance(self, **kwargs):
+        return BlogPost.objects.create(**kwargs)
+
+</code></pre>
+</section>
+<section>
+<h2>Complete Test Case</h2>
+<div>
+    <br>
+</div>
+<pre><code>
+class BlogPostTestCase(PublishableTests, AuthorableTests, PermalinkableTests, TimestampableTests, TestCase):
+    model = BlogPost
+    
+    def create_instance(self, **kwargs):
+        return BlogPost.objects.create(**kwargs)
+
+    def test_blog_specific_functionality(self):
+        ...
+
+</code></pre>
+</section>
+</section>
+<section>
+<h2>Additional Model Testing Tips</h2>
+<div>
+    <br>
+</div>
+<div style="text-align: left; ">
+    <ul>
+<li>Use <a href="https://github.com/dnerdy/factory_boy">Factory Boy</a> for creating test instances/fixtures<br>
+</li>
+    </ul>
+<p>
+    </p>
+<ul>
+<li>Use Inherited TestCases to validate different scenarios</li>
+    </ul>
+<p>
+</p>
+</div>
+<div>
+<br>
+</div>
+<pre><code>
+class StaffBlogPostTestCase(PublishableTests, AuthorableTests, PermalinkableTests, TimestampableTests, BaseBlogPostTestCase):
+    det setUp(self):
+        self.user = StaffUser()
+
+class AuthorizedUserBlogPostTestCase(PublishableTests, AuthorableTests, PermalinkableTests, TimestampableTests, BaseBlogPostTestCase):
+    det setUp(self):
+        self.user = AuthorizedUser()
+
+</code></pre>
+<p>
+(Same behavior expected for Staff or Authorized User)
+</p>
+</section>
+<section>
+    <section>
+        <h2>Reusability</h2>
+<div>
+        <br>
+    </div>
+<h3 style="text-align: left; ">We eventually build up a Library of Behaviors</h3>
+<div style="text-align: left; ">
+<ul>
+<li>
+    <i>Permalinkable</i>
+</li>
+<li>
+<i>Publishable</i>
+</li>
+<li>
+<i>Authorable</i>
+</li>
+<li>
+<i>Timestampable</i>
+</li>
+</ul>
+<div>
+<br>
+</div>
+<h3>Re-usable both across our own Apps and shareable through the Community</h3>
+<div>More Examples</div>
+<div>
+<ul>
+<li>
+<i>Moderatable</i> - BooleanField('approved')</li>
+<li>
+<i>Scheduleable</i> - (start_date and end_date with range queries)</li>
+<li>
+<i>GenericRelatable</i> (the triplet of content_type, object_id and GenericForeignKey)</li>
+<li>
+<i>Orderable</i> - PositiveSmallIntegerField('position')</li>
+</ul>
+</div>
+</div>
+</section>
+<section>
+<h2>Reusability Example</h2>
+<p>
+</p>
+<pre><code>from django.db import models
+from .behaviors import Authorable, Permalinkable, Timestampable, Publishable
+
+
+class BlogPost(Authorable, Permalinkable, Timestampable, Publishable, models.Model):
+    title = models.CharField(max_length=255)
+    body = models.TextField()
+    
+    url_name = "blog-post"
+
+    @property
+    def slug_source(self):
+        return self.title
+</code></pre>
+<pre class="fragment" data-fragment-index="0">
+<code>
+class BlogComment(Authorable, Permalinkable, Timestampable, models.Model):
+    post = models.ForeignKey(BlogPost, related_name='comments')
+    subject = models.CharField(max_length=255)
+    body = models.TextField()
+
+    url_name = 'blog-comment'
+    
+    def get_url_kwargs(self, **kwargs):
+        return super(BlogComment, self).get_url_kwargs(post_slug=self.post.slug, **kwargs)
+    
+    @property
+    def slug_source(self):
+        return self.subject
+</code>
+</pre>
+</section>
+<section>
+    <h2>Reusability Enforces Standards</h2>
+<div style="text-align: left; ">
+    <br>
+</div>
+<div style="text-align: left; ">
+<ul>
+<li>Common Idioms, esp. in Templates and Template Tags</li>
+<li>Permissions and Security</li>
+<li>Testability</li>
+</ul>
+<div>
+<br>
+</div>
+<h3 style="text-align: center; ">It's ultimately about Separation of Concerns</h3>
+<div>
+<ul>
+<li>Keep the business logic encapsulated in the behavior</li>
+<li>Standardize the interface to shared behaviors for consistency</li>
+<li>
+<i>Authorable</i> always means <i>obj.author</i>, not <i>obj.user</i> or <i>obj.owner</i>
+</li>
+</ul>
+</div>
+</div>
+</section>
+</section>
+<section>
+    <h2>
+    </h2>
+<h2>Recommended App Layout</h2>
+<div>
+    <br>
+</div>
+    <div style="font: inherit; text-align: left; ">
+        <p>
+        </p>
+<ul>
+<li>querysets.py</li>
+        </ul>&nbsp;&nbsp;</div>
+<div style="font: inherit; text-align: left; ">
+<ul>
+<li>behaviors.py (uses querysets)</li>
+        </ul>
+<ul>
+<li>models.py (composition of querysets and behaviors)</li>
+        </ul>
+<ul>
+<li>factories.py (uses models)</li>
+        </ul>
+<ul>
+<li>tests.py (uses all, split this into a module for larger apps)</li>
+        </ul>
+<p>
+</p>
+    <div>
+        <br>
+</div>
+    <div>I usually have a&nbsp;<i>common</i>&nbsp;app that has the shared behaviors, model and behavior test mixins with no dependencies on other apps.</div>
+</div>
+
+</section>
+<section>
+    <h2>Limitations/Pitfalls</h2>
+<div>
+    <br>
+</div>
+<div>Basically the challenges of Django Model Inheritance</div>
+<div>
+    <br>
+</div>
+<h3 style="text-align: left; ">Leaky Abstractions</h3>
+<div style="text-align: left; ">
+    <ul>
+<li>Meta Options don't implicitly inherit (ordering, etc)</li>
+        <li>Manager vs Queryset vs Model (some duplication of logic)</li>
+<li>ModelField options (toggling default=True vs default=False)</li>
+</ul>
+<br>
+</div>
+<div style="text-align: left; ">
+<br>
+</div>
+<div style="text-align: center; ">You often need to handle the composition yourself</div>
+<div style="text-align: center; ">(such as merging custom QuerySet classes)</div>
+<div style="text-align: center; ">(or combining Meta Options)</div>
+<div style="text-align: left; ">
+<br>
+</div>
+</section>
+<section>
+    <h2>3rd Party Helpers</h2>
+<div>
+    <br>
+</div>
+<h3>Don't Re-invent the Wheel</h3>
+<div>
+<br>
+</div>
+<div style="text-align: left; ">
+<ul>
+<li>
+<a href="https://github.com/django-extensions/django-extensions">Django Extensions</a> (UUIDField, AutoSlugField, etc)</li>
+<li>
+<a href="https://github.com/carljm/django-model-utils">Django Model Utils</a> (already mentioned)</li>
+<li>Filters (<a href="https://github.com/alex/django-filter">django-filter</a>)</li>
+</ul>
+<div>
+<br>
+</div>
+<h3 style="text-align: center; ">Test Helpers</h3>
+<div>
+<br>
+</div>
+<div>
+<ul>
+<li>Factories (<a href="https://github.com/dnerdy/factory_boy">factory boy</a>)</li>
+<li>Mocking (<a href="http://www.voidspace.org.uk/python/mock/">mock</a>)</li>
+</ul>
+</div>
+</div>
+</section>
+<section>
+    <h1>
+        <br>
+    </h1>
+<h1>
+    <br>
+</h1>
+<h1>Questions?</h1>
+<div>
+<br>
+</div>
+</section>
+<section>
+    <h1>
+        <br>
+    </h1>
+<h1>The End</h1>
+<div>
+    <br>
+</div>
+<div>
+<div style="font: inherit; ">Example code available at</div>
+<div style="font: inherit; ">
+<a href="https://github.com/kevinastone/django-model-behaviors-example">https://github.com/kevinastone/django-model-behaviors-example</a>
+</div>
+</div>
+<div>
+<br>
+</div>
+<div>
+<br>
+</div>
+<div>
+<br>
+</div>
+<h3>
+<u>About the Author</u>:</h3>
+<div>Kevin Stone is the CTO and Founder of <a href="http://subblime.com">Subblime</a>
+</div>
+<div>
+<br>
+</div>
+<div>Interested in working on these challenges? &nbsp;Subblime is <a href="http://subblime.com/jobs">hiring</a>
+</div>
+</section>
+</div>
