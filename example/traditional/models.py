@@ -6,7 +6,7 @@ class BlogPostManager(models.Manager):
     
     def published(self):
         from django.utils import timezone
-        return self.filter(publish_date__lte=timezone.now())
+        return self.filter(~models.Q(publish_date=None)).filter(publish_date__lte=timezone.now())
     
     def authored_by(self, author):
         return self.filter(author__username=author)
@@ -37,7 +37,7 @@ class BlogPost(models.Model):
     @property
     def is_published(self):
         from django.utils import timezone
-        return self.publish_date < timezone.now()
+        return self.publish_date and self.publish_date < timezone.now()
 
     def publish_on(self, date=None):
         from django.utils import timezone

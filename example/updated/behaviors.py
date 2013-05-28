@@ -46,7 +46,7 @@ class Publishable(models.Model):
     @property
     def is_published(self):
         from django.utils import timezone
-        return self.publish_date < timezone.now()
+        return self.publish_date and self.publish_date < timezone.now()
 
 
 class Authorable(models.Model):
