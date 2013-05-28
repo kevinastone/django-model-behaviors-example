@@ -12,11 +12,16 @@ class BehaviorTestCaseMixin(object):
 
 
 class PublishableTests(BehaviorTestCaseMixin):
-    def test_published_blogpost(self):
+    def test_published(self):
         from django.utils import timezone
         obj = self.create_instance(publish_date=timezone.now())
         self.assertTrue(obj.is_published)
         self.assertIn(obj, self.model.objects.published())
+    
+    def test_unpublished(self):
+        obj = self.create_instance(publish_date=None)
+        self.assertFalse(obj.is_published)
+        self.assertNotIn(obj, self.model.objects.published())
 
 
 class BlogPostTestCase(PublishableTests, TestCase):
